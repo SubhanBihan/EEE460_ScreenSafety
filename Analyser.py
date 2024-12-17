@@ -1,12 +1,34 @@
 import numpy as np
+import tkinter as tk
+from tkinter import filedialog
  
 # Constants
 h = 6.626e-34  # Planck's constant (Js)
 c = 3.0e8      # Speed of light (m/s)
 e = 1.602e-19  # Joules to eV
+
+# Prompt for file opening
+root = tk.Tk()
+root.withdraw()  # Hide the main window
+
+# Open file dialog to choose a .txt file
+file_path1 = filedialog.askopenfilename(
+    filetypes=[("Text files", "*.txt"), ("All files", "*.*")],
+    title="Open Background Spectrum Data"
+)
+
+# Prompt for file opening
+root = tk.Tk()
+root.withdraw()  # Hide the main window
+
+# Open file dialog to choose a .txt file
+file_path2 = filedialog.askopenfilename(
+    filetypes=[("Text files", "*.txt"), ("All files", "*.*")],
+    title="Open Source Spectrum Data"
+)
  
-file_path1 = "C:\\Users\\SBihan\\Desktop\\Theremino\\Spectrum_bg.txt"
-file_path2 = "C:\\Users\\SBihan\\Desktop\\Theremino\\Spectrum_v2.txt"
+# file_path1 = "C:\\Users\\SBihan\\Desktop\\Theremino\\Spectrum_bg.txt"
+# file_path2 = "C:\\Users\\SBihan\\Desktop\\Theremino\\Spectrum_v4.txt"
    
 def integrate_intensity(file_path, start_wavelength, end_wavelength):
     """
@@ -99,4 +121,13 @@ blue_light_perc = 100 * blue_light_energy / visible_light_energy
 visible_light_efficiency = 100 * visible_light_energy / (visible_light_energy + ir_energy)
  
 print(f"Short-wavelength light percentage (in visible spectrum): {blue_light_perc}%")
+if blue_light_energy > 30:
+    print("Prolonged Exposure Unsafe!")
+else:
+    print("Relatively Safe!")
+    
 print(f"Display Efficiency: {visible_light_efficiency}%")
+if visible_light_efficiency > 60:
+    print("Acceptable Optical Efficiency!")
+else:
+    print("Your Display is quite inefficient!")
