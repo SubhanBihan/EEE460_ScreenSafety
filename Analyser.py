@@ -26,9 +26,6 @@ file_path2 = filedialog.askopenfilename(
     filetypes=[("Text files", "*.txt"), ("All files", "*.*")],
     title="Open Source Spectrum Data"
 )
- 
-# file_path1 = "C:\\Users\\SBihan\\Desktop\\Theremino\\Spectrum_bg.txt"
-# file_path2 = "C:\\Users\\SBihan\\Desktop\\Theremino\\Spectrum_v4.txt"
    
 def integrate_intensity(file_path, start_wavelength, end_wavelength):
     """
