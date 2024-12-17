@@ -1,113 +1,102 @@
-import cv2
 import numpy as np
-import matplotlib.pyplot as plt
-
-
-def find_spectrum_line(frame, region_of_interest):
-    roi = frame[region_of_interest[1]:region_of_interest[3],
-                region_of_interest[0]:region_of_interest[2]]
-    gray_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-    intensity = np.mean(gray_roi, axis=0)
-    return intensity
-
-
-def map_pixels_to_wavelengths(intensity, wavelength_range=(400, 700)):
-    num_pixels = len(intensity)
-    wavelengths = np.linspace(wavelength_range[0], wavelength_range[1], num_pixels)
-    return wavelengths
-
-
-def main():
-    camera_index = 1
-    cap = cv2.VideoCapture(camera_index)
-
-    if not cap.isOpened():
-        print("Error: Unable to access the camera")
-        return
-
-    # Initialization
-    I0 = None  # Reference intensity
-    wavelength_range = (400, 700)  # Wavelength range in nm
-    roi_coordinates = (100, 200, 600, 250)  # (x1, y1, x2, y2)
-
-    # Constants for Beer-Lambert law
-    epsilon = 0.02  # Molar absorptivity (example value in L·mol^-1·cm^-1)
-    path_length = 1  # Path length (cm)
-
-    print("Press 'r' to record reference intensity (I0)")
-    print("Press 'q' to quit")
-
-    plt.ion()  # Enable interactive mode for real-time plotting
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            print("Error: Unable to capture frame")
-            break
-
-        # Draw the ROI on the live feed
-        cv2.rectangle(frame, (roi_coordinates[0], roi_coordinates[1]),
-                      (roi_coordinates[2], roi_coordinates[3]), (0, 255, 0), 2)
-
-        # Extract the intensity profile
-        intensity = find_spectrum_line(frame, roi_coordinates)
-        wavelengths = map_pixels_to_wavelengths(intensity, wavelength_range)
-
-        if I0 is None:
-            # Plot the intensity spectrum with colors
-            plt.clf()
-            plt.scatter(wavelengths, intensity, c=wavelengths, cmap='rainbow', s=5)
-            plt.colorbar(label='Wavelength (nm)')
-            plt.xlabel('Wavelength (nm)')
-            plt.ylabel('Intensity')
-            plt.title('Real-Time Intensity Spectrum (Colorful)')
-            plt.pause(0.001)
-        else:
-            # Calculate absorbance
-            absorbance = -np.log10(intensity / I0)
-            absorbance = np.clip(absorbance, 0, np.inf)  # Avoid invalid values
-
-            # Calculate concentration using Beer-Lambert law
-            concentration = absorbance / (epsilon * path_length)
-            mean_concentration = np.mean(concentration)/10  # Average concentration
-
-            # Plot absorbance spectrum
-            plt.clf()
-            plt.subplot(211)
-            plt.scatter(wavelengths, absorbance, c=wavelengths, cmap='viridis', s=5)
-            plt.colorbar(label='Wavelength (nm)')
-            plt.xlabel('Wavelength (nm)')
-            plt.ylabel('Absorbance')
-            plt.title('Real-Time Absorbance Spectrum')
-
-            # Plot mean concentration
-            plt.subplot(212)
-            plt.axhline(mean_concentration, color='red', linestyle='--', label=f'Mean Concentration = {mean_concentration:.3f} mol/L')
-            plt.xlabel('Wavelength (nm)')
-            plt.ylabel('Concentration (mol/L)')
-            plt.title('Real-Time Concentration')
-            plt.legend()
-
-            plt.pause(0.001)
-
-            # Display mean concentration in terminal
-            print(f"Mean Concentration: {mean_concentration:.3f} mol/L")
-
-        # Show the live webcam feed
-        cv2.imshow('Spectrometer View', frame)
-
-        # Handle key events
-        key = cv2.waitKey(1) & 0xFF
-        if key == ord('r'):
-            I0 = intensity.copy()  # Record reference intensity
-            print("Reference intensity (I0) recorded successfully")
-        elif key == ord('q'):
-            break
-
-    # Cleanup
-    cap.release()
-    cv2.destroyAllWindows()
-    plt.close()
-
-
-
-main()
+ 
+# Constants
+h = 6.626e-34  # Planck's constant (Js)
+c = 3.0e8      # Speed of light (m/s)
+e = 1.602e-19  # Joules to eV
+ 
+file_path1 = "C:\\Users\\SBihan\\Desktop\\Theremino\\Spectrum_bg.txt"
+file_path2 = "C:\\Users\\SBihan\\Desktop\\Theremino\\Spectrum_v2.txt"
+   
+def integrate_intensity(file_path, start_wavelength, end_wavelength):
+    """
+    Integrates the intensity with respect to wavelength over a specified range.
+ 
+    Parameters:
+        file_path (str): Path to the spectrum data file.
+        start_wavelength (float): Start wavelength for integration.
+        end_wavelength (float): End wavelength for integration.
+ 
+    Returns:
+        float: The calculated integral of intensity.
+    """
+    
+    data = np.loadtxt(file_path, skiprows=1)
+   
+    # Extract wavelength and intensity columns
+    wavelengths = data[:, 0]
+    intensities = data[:, 1]
+   
+    # Filter the data within the desired range
+    mask = (wavelengths >= start_wavelength) & (wavelengths <= end_wavelength)
+    filtered_wavelengths = wavelengths[mask]
+    filtered_intensities = intensities[mask]
+   
+    # Calculate the integrand: I(lambda) * lambda. h*c is a constant so doesn't matter for ratio
+    integrand = filtered_intensities * filtered_wavelengths
+   
+    # Perform numerical integration using the trapezoidal rule
+    integral = np.trapz(integrand, filtered_wavelengths)
+   
+    return integral
+ 
+def integrate_photon_energy(file_path, start_wavelength, end_wavelength):
+    """
+    Integrates intensity * photon energy with respect to wavelength over a specified range.
+ 
+    Parameters:
+        file_path (str): Path to the spectrum data file.
+        start_wavelength (float): Start wavelength for integration (in nm).
+        end_wavelength (float): End wavelength for integration (in nm).
+ 
+    Returns:
+        float: The calculated integral of intensity * photon energy (in eV·nm).
+    """
+    
+    data = np.loadtxt(file_path, skiprows=1)
+   
+    # Extract wavelength and intensity columns
+    wavelengths = data[:, 0]  # in nm
+    intensities = data[:, 1]
+   
+    # Filter the data within the desired range
+    mask = (wavelengths >= start_wavelength) & (wavelengths <= end_wavelength)
+    filtered_wavelengths = wavelengths[mask]
+    filtered_intensities = intensities[mask]
+   
+    # Perform numerical integration using the trapezoidal rule
+    integral = np.trapz(filtered_intensities, filtered_wavelengths)
+   
+    return integral
+ 
+# Example usage:
+ 
+# start_wavelength = 300.0
+# end_wavelength = 400.0
+# intensity_integral = integrate_intensity(file_path, start_wavelength, end_wavelength)
+# print(f"The integral of intensity is: {intensity_integral}")
+ 
+# energy_integral = integrate_photon_energy(file_path, start_wavelength, end_wavelength)
+# print(f"The integral of intensity * photon energy is: {energy_integral} eV·nm")
+ 
+"""TO DO:
+1. Meet requirements
+2. Make some kind of flashy GUI to display assessment
+3. NUMBER OF PHOTONS or ENERGY ratio???
+"""
+ 
+visible_light_photons = integrate_intensity(file_path2, 380, 750) - integrate_intensity(file_path1, 380, 750)
+visible_light_energy = integrate_photon_energy(file_path2, 380, 750) - integrate_photon_energy(file_path1, 
+                                                                                               380, 750)
+ 
+blue_light_photons = integrate_intensity(file_path2, 380, 495) - integrate_intensity(file_path1, 380, 495)
+blue_light_energy = integrate_photon_energy(file_path2, 380, 495) - integrate_photon_energy(file_path1, 380, 495)
+ 
+ir_photons = integrate_intensity(file_path2, 750, 1200) - integrate_intensity(file_path1, 750, 1200)
+ir_energy = integrate_photon_energy(file_path2, 750, 1200) - integrate_photon_energy(file_path1, 750, 1200)
+ 
+blue_light_perc = 100 * blue_light_energy / visible_light_energy
+visible_light_efficiency = 100 * visible_light_energy / (visible_light_energy + ir_energy)
+ 
+print(f"Short-wavelength light percentage (in visible spectrum): {blue_light_perc}%")
+print(f"Display Efficiency: {visible_light_efficiency}%")
