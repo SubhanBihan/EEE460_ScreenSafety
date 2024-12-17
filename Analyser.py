@@ -88,22 +88,6 @@ def integrate_photon_energy(file_path, start_wavelength, end_wavelength):
    
     return integral
  
-# Example usage:
- 
-# start_wavelength = 300.0
-# end_wavelength = 400.0
-# intensity_integral = integrate_intensity(file_path, start_wavelength, end_wavelength)
-# print(f"The integral of intensity is: {intensity_integral}")
- 
-# energy_integral = integrate_photon_energy(file_path, start_wavelength, end_wavelength)
-# print(f"The integral of intensity * photon energy is: {energy_integral} eV·nm")
- 
-"""TO DO:
-1. Meet requirements
-2. Make some kind of flashy GUI to display assessment
-3. NUMBER OF PHOTONS or ENERGY ratio???
-"""
- 
 visible_light_photons = integrate_intensity(file_path2, 380, 750) - integrate_intensity(file_path1, 380, 750)
 visible_light_energy = integrate_photon_energy(file_path2, 380, 750) - integrate_photon_energy(file_path1, 
                                                                                                380, 750)
